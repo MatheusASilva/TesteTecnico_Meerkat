@@ -3,23 +3,23 @@
 ## 1- Após uma breve análise inicial dos dados fornecidos percebi que existem formatações não padronizadas, desse modo, antes de enviar os dados para um BD mais robusto em nuvem, decidi formatar e padronizar as entradas dos ".csv".
 
 Erros de formatação encontrados e o que foi feito para corrigir:
-	
-*	- **Datas fora de um padrão específico.**
+* 
+	- **Datas fora de um padrão específico.**
 *		Padronizar para o padrão de entradas de datas de SQL "ano-mes-dia"
-*	- **Falta de formatação nas strings de SKU em vendas.**
+	- **Falta de formatação nas strings de SKU em vendas.**
 *		Padronizar para a forma "PC-número"
-*	- **Valores utilizando . ou ,**
+	- **Valores utilizando . ou ,**
 *		Padronizar para a forma de entrada de float em SQL "XX.xx"
-*	- **Categorias, Lojas e Status fora de padrão**
+	- **Categorias, Lojas e Status fora de padrão**
 *		Padronizar as strings de acordo com a informação dentro delas
 *		Este passo exigiu pesquisa
-*	- **Espaço antes ou depois de números**
+	- **Espaço antes ou depois de números**
 *		Retirar os espaços.
-*	- **Campos vazios**
+	- **Campos vazios**
 *		Atribuir valores nulos aos campos
-*	- **Símbolos em números**
+	- **Símbolos em números**
 *		Remoção dos símbolos
-*	- **Categorias de produtos repetidas e misturadas para o mesmo item**
+	- **Categorias de produtos repetidas e misturadas para o mesmo item**
 *		Alinhar as categorias escritas diferentes para uma única
 
 ## 2 - Decidi criar uma conta na Supabase e pesquisar um pouco sobre a plataforma, após isso importei os dados do csv para a nuvem.
@@ -37,3 +37,6 @@ Erros de formatação encontrados e o que foi feito para corrigir:
 * Melhor formatei os models utilizando LLM, para garantir código limpo e padroes profissionais
 
 #### Testei o funcionamento dos models num arquivo esterno "teste.py"
+
+## 6 - Criei os arquivos de controllers para Peças e Vendas seguindo as rotas descritas no documento do Case Técnico.
+

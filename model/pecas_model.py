@@ -74,7 +74,7 @@ class PecaDAO:
             raise e
 
     @staticmethod
-    def lista() -> list[Peca]:
+    def listar() -> list[Peca]:
         try:
             with connection.cursor() as cursor:
                 select_query = """

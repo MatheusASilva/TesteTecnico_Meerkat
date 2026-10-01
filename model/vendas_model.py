@@ -111,7 +111,7 @@ class VendaDAO:
             raise e
 
     @staticmethod
-    def lista() -> list[Venda]:
+    def listar() -> list[Venda]:
         try:
             with connection.cursor() as cursor:
                 select_query = """
@@ -128,7 +128,7 @@ class VendaDAO:
             raise e
 
     @staticmethod
-    def cancela_venda(id_venda: str) -> bool:
+    def cancela(id_venda: str) -> bool:
         try:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT status, sku, quantidade FROM vendas WHERE id_venda = %s", (id_venda,))
