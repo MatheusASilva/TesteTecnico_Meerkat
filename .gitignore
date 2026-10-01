@@ -1,2 +1,7 @@
 pecas.csv
 vendas.csv
+.env
+venv/
+config/.env
+model/__pycache__/
+controllers/__pycache__/
