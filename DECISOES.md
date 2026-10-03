@@ -40,3 +40,5 @@ Erros de formatação encontrados e o que foi feito para corrigir:
 
 ## 6 - Criei os arquivos de controllers para Peças e Vendas seguindo as rotas descritas no documento do Case Técnico.
 
+## 7 - Criei um controller para o dashboard pensando em retornar os dados principais pedidos no Case Técnico.
+

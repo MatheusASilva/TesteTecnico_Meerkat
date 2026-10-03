@@ -25,7 +25,7 @@ async def listar_vendas():
     try:
         return VendaDAO.listar()
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Erro ao listar vendas: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar vendas: {e}")
 
 @router.get("/{id_venda}", status_code=status.HTTP_200_OK)
 async def buscar_venda(id_venda: str):
@@ -35,15 +35,15 @@ async def buscar_venda(id_venda: str):
             raise HTTPException(status_code=404, detail="Venda não encontrada")
         return venda
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Erro ao buscar venda: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar venda: {e}")
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def criar_venda(venda: VendaRequest):
     try:
-        VendaDAO.salvar(venda)
+        VendaDAO.salva(venda)
         return {"message": "Venda criada com sucesso"}
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Erro ao criar venda: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao criar venda: {e}")
 
 @router.put("/{id_venda}", status_code=status.HTTP_200_OK)
 async def atualiza_venda(id_venda: str, venda: VendaRequest):
@@ -59,7 +59,7 @@ async def atualiza_venda(id_venda: str, venda: VendaRequest):
         VendaDAO.atualiza(venda_atualizada)
         return {"mensagem": "Venda atualizada com sucesso!", "venda": venda_atualizada}
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Erro ao atualizar venda: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar venda: {e}")
 
 @router.delete("/{id_venda}", status_code=status.HTTP_200_OK)
 async def deletar_venda(id_venda: str):
@@ -67,4 +67,4 @@ async def deletar_venda(id_venda: str):
         VendaDAO.cancela(id_venda)
         return {"message": "Venda deletada com sucesso"}
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Erro ao deletar venda: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao deletar venda: {e}")

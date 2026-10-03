@@ -117,6 +117,7 @@ class VendaDAO:
                 select_query = """
                     SELECT id_venda, data_venda, loja, cliente, sku, quantidade, preco_unitario, desconto, status, vendedor 
                     FROM vendas
+                    order by data_venda DESC
                 """
                 cursor.execute(select_query)
                 results = cursor.fetchall()

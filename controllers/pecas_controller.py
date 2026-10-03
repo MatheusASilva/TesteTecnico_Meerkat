@@ -37,7 +37,7 @@ async def buscar_peca(sku: str):
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def criar_peca(peca: PecaRequest):
     try:
-        PecaDAO.salvar(peca)
+        PecaDAO.salva(peca)
         return {"message": "Peça criada com sucesso"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar peça: {e}")

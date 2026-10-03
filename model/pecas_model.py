@@ -80,6 +80,7 @@ class PecaDAO:
                 select_query = """
                     SELECT sku, nome_peca, categoria, custo_unitario, fornecedor, estoque_atual 
                     FROM pecas
+                    order by sku
                 """
                 cursor.execute(select_query)
                 results = cursor.fetchall()
