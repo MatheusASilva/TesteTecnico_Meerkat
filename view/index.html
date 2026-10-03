@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Dashboard gerencial da AutoPeças Andrade"
+    />
+    <title>Resumo gerencial | AutoPeças Andrade</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar text-white">
+      <div
+        class="container page-wrap py-3 d-flex justify-content-between align-items-center"
+      >
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-mark" aria-hidden="true">
+            <i class="bi bi-gear-wide-connected"></i>
+          </div>
+          <div>
+            <p class="mb-0 fw-bold fs-4">AutoPeças Andrade</p>
+            <p class="mb-0 text-white-50">Resumo gerencial</p>
+          </div>
+        </div>
+        <button
+          id="refresh-button"
+          class="btn btn-light btn-lg fw-semibold"
+          type="button"
+        >
+          <i class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>Atualizar
+          dados
+        </button>
+      </div>
+    </header>
+
+    <main class="container page-wrap py-4 py-lg-5">
+      <nav class="workspace-nav mb-4" aria-label="Áreas do sistema">
+        <button
+          class="workspace-tab active"
+          type="button"
+          data-view="dashboard-view"
+        >
+          <i class="bi bi-speedometer2" aria-hidden="true"></i>Dashboard
+        </button>
+        <button class="workspace-tab" type="button" data-view="parts-view">
+          <i class="bi bi-box-seam" aria-hidden="true"></i>Peças
+        </button>
+        <button class="workspace-tab" type="button" data-view="sales-view">
+          <i class="bi bi-receipt" aria-hidden="true"></i>Vendas
+        </button>
+      </nav>
+
+      <div
+        class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4"
+      >
+        <div>
+          <p class="eyebrow mb-2">Visão geral</p>
+          <h1 class="h2 mb-1 fw-bold">Desempenho da loja</h1>
+          <p class="mb-0 text-secondary">
+            Acompanhe faturamento, categorias e peças que precisam de atenção.
+          </p>
+        </div>
+        <div id="last-update" class="text-secondary" aria-live="polite">
+          Aguardando dados...
+        </div>
+      </div>
+
+      <div
+        id="global-error"
+        class="alert error-message d-none mb-4"
+        role="alert"
+      ></div>
+
+      <section id="dashboard-view" class="app-view">
+        <div class="row g-4">
+          <section class="col-12 col-xl-5" aria-labelledby="revenue-title">
+            <article class="panel accent-line p-4 p-lg-5">
+              <div
+                class="d-flex justify-content-between align-items-start gap-3"
+              >
+                <div>
+                  <p class="eyebrow mb-2">Indicador principal</p>
+                  <h2 id="revenue-title" class="h4 mb-0 fw-bold">
+                    Faturamento líquido total
+                  </h2>
+                </div>
+                <i
+                  class="bi bi-graph-up-arrow fs-3 text-success"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              <div id="revenue-content" class="mt-5" aria-live="polite">
+                <div class="placeholder-glow">
+                  <span class="placeholder col-9 metric-value"></span>
+                </div>
+                <p class="metric-caption mt-2 mb-0">
+                  Consolidado das vendas concluídas
+                </p>
+              </div>
+            </article>
+          </section>
+
+          <section class="col-12 col-xl-7" aria-labelledby="category-title">
+            <article class="panel p-4">
+              <div
+                class="panel-heading pb-3 mb-4 d-flex justify-content-between align-items-start gap-3"
+              >
+                <div>
+                  <p class="eyebrow mb-2">Onde está o resultado</p>
+                  <h2 id="category-title" class="h4 mb-0 fw-bold">
+                    Ranking de faturamento por categoria
+                  </h2>
+                </div>
+                <i
+                  class="bi bi-bar-chart-line fs-3 text-primary"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              <div id="category-content" aria-live="polite">
+                <div class="placeholder-glow mb-4">
+                  <span class="placeholder col-12"></span>
+                </div>
+                <div class="placeholder-glow mb-4">
+                  <span class="placeholder col-10"></span>
+                </div>
+                <div class="placeholder-glow">
+                  <span class="placeholder col-8"></span>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="col-12" aria-labelledby="stagnant-title">
+            <article class="panel alert-panel p-4">
+              <div class="row g-4 align-items-start">
+                <div class="col-12 col-lg-4">
+                  <p class="eyebrow mb-2">Ação recomendada</p>
+                  <h2 id="stagnant-title" class="h4 fw-bold mb-3">
+                    Estoque parado
+                  </h2>
+                  <p class="text-secondary mb-4">
+                    Peças nunca vendidas que ocupam espaço e capital da loja.
+                  </p>
+                  <div id="stagnant-count" aria-live="polite">
+                    <div class="placeholder-glow">
+                      <span class="placeholder col-4 metric-value"></span>
+                    </div>
+                  </div>
+                  <p class="metric-caption mb-0">peças sem venda registrada</p>
+                </div>
+                <div class="col-12 col-lg-8">
+                  <div
+                    id="inventory-content"
+                    class="inventory-scroll"
+                    aria-live="polite"
+                  >
+                    <div class="p-4 placeholder-glow">
+                      <span class="placeholder col-12"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+        </div>
+      </section>
+
+      <section
+        id="insights-panel"
+        class="panel p-4 mt-4"
+        aria-labelledby="insights-title"
+      >
+        <div
+          class="panel-heading pb-3 mb-4 d-flex justify-content-between align-items-start gap-3"
+        >
+          <div>
+            <p class="eyebrow mb-2">Leitura para decisão</p>
+            <h2 id="insights-title" class="h4 mb-1 fw-bold">
+              Filtros e margem por categoria
+            </h2>
+            <p class="text-secondary mb-0">
+              Compare o resultado por período, loja e categoria.
+            </p>
+          </div>
+          <i class="bi bi-funnel fs-3 text-primary" aria-hidden="true"></i>
+        </div>
+        <form id="insights-filters" class="row g-3 align-items-end mb-4">
+          <div class="col-12 col-md-3">
+            <label class="form-label" for="filter-start">A partir de</label
+            ><input id="filter-start" class="form-control" type="date" />
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label" for="filter-end">Até</label
+            ><input id="filter-end" class="form-control" type="date" />
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label" for="filter-store">Loja</label
+            ><select id="filter-store" class="form-select">
+              <option value="">Todas as lojas</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label" for="filter-category">Categoria</label
+            ><select id="filter-category" class="form-select">
+              <option value="">Todas as categorias</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-filter me-2" aria-hidden="true"></i>Aplicar
+              filtros</button
+            ><button
+              id="clear-filters"
+              class="btn btn-outline-secondary ms-2"
+              type="button"
+            >
+              Limpar filtros
+            </button>
+          </div>
+        </form>
+        <div id="insights-summary" class="row g-3 mb-4"></div>
+        <div id="margin-content" class="table-responsive"></div>
+      </section>
+
+      <section
+        id="parts-view"
+        class="app-view d-none"
+        aria-labelledby="parts-title"
+      >
+        <div
+          class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4"
+        >
+          <div>
+            <p class="eyebrow mb-2">Cadastro operacional</p>
+            <h2 id="parts-title" class="h3 mb-1 fw-bold">Peças</h2>
+            <p class="text-secondary mb-0">
+              Consulte e corrija o cadastro sem depender de terceiros.
+            </p>
+          </div>
+          <button id="new-part" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nova peça
+          </button>
+        </div>
+        <div class="row g-4">
+          <div class="col-12 col-lg-8">
+            <div class="panel p-4">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <caption class="visually-hidden">
+                    Cadastro de peças
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th>Nome</th>
+                      <th>Categoria</th>
+                      <th>Preço</th>
+                      <th>Estoque</th>
+                      <th class="text-end">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="parts-table"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="panel p-4">
+              <h3 id="part-form-title" class="h5 fw-bold mb-3">
+                Adicionar peça
+              </h3>
+              <form id="part-form" class="row g-3">
+                <div class="col-12">
+                  <label class="form-label" for="part-sku">SKU</label
+                  ><input id="part-sku" class="form-control" required />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="part-name">Nome da peça</label
+                  ><input id="part-name" class="form-control" required />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="part-category">Categoria</label
+                  ><input id="part-category" class="form-control" required />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="part-cost"
+                    >Custo unitário</label
+                  ><input
+                    id="part-cost"
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="part-supplier"
+                    >Fornecedor</label
+                  ><input id="part-supplier" class="form-control" required />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="part-stock"
+                    >Estoque atual</label
+                  ><input
+                    id="part-stock"
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                  />
+                </div>
+                <div class="col-12 d-flex gap-2">
+                  <button class="btn btn-primary" type="submit">
+                    Salvar peça</button
+                  ><button
+                    id="cancel-part"
+                    class="btn btn-outline-secondary"
+                    type="button"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="sales-view"
+        class="app-view d-none"
+        aria-labelledby="sales-title"
+      >
+        <div
+          class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4"
+        >
+          <div>
+            <p class="eyebrow mb-2">Movimentação</p>
+            <h2 id="sales-title" class="h3 mb-1 fw-bold">Vendas</h2>
+            <p class="text-secondary mb-0">
+              Consulte as vendas registradas e atualize informações quando
+              necessário.
+            </p>
+          </div>
+          <span id="sales-count" class="badge text-bg-light fs-6"></span>
+        </div>
+        <div class="panel p-4">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <caption class="visually-hidden">
+                Vendas registradas
+              </caption>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Data</th>
+                  <th>Loja</th>
+                  <th>SKU</th>
+                  <th>Qtd.</th>
+                  <th>Total líquido</th>
+                  <th>Status</th>
+                  <th class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="sales-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="sale-editor" class="panel p-4 mt-4 d-none">
+          <h3 class="h5 fw-bold mb-3">
+            Editar venda <span id="sale-editor-id"></span>
+          </h3>
+          <form id="sale-form" class="row g-3">
+            <div class="col-12 col-md-3">
+              <label class="form-label" for="sale-date">Data</label
+              ><input
+                id="sale-date"
+                class="form-control"
+                type="date"
+                required
+              />
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label" for="sale-store">Loja</label
+              ><input id="sale-store" class="form-control" required />
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label" for="sale-client">Cliente</label
+              ><input id="sale-client" class="form-control" required />
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label" for="sale-sku">SKU</label
+              ><input id="sale-sku" class="form-control" required />
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label" for="sale-quantity">Quantidade</label
+              ><input
+                id="sale-quantity"
+                class="form-control"
+                type="number"
+                required
+              />
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label" for="sale-price">Preço unitário</label
+              ><input
+                id="sale-price"
+                class="form-control"
+                type="number"
+                step="0.01"
+                required
+              />
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label" for="sale-discount">Desconto (%)</label
+              ><input
+                id="sale-discount"
+                class="form-control"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                required
+              />
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label" for="sale-status">Status</label
+              ><select id="sale-status" class="form-select">
+                <option>CONCLUIDA</option>
+                <option>DEVOLVIDA</option>
+                <option>CANCELADA</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label" for="sale-seller">Vendedor</label
+              ><input id="sale-seller" class="form-control" required />
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary" type="submit">
+                Salvar alterações</button
+              ><button
+                id="cancel-sale"
+                class="btn btn-outline-secondary ms-2"
+                type="button"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+      <div id="status-area" class="status-area mt-4" aria-live="polite"></div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

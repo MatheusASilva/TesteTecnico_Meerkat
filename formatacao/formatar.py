@@ -30,8 +30,18 @@ def formatar_valor(valor):
         return 0.0
     
     try:
-        valor = str(valor).replace(",", ".")
         valor = str(valor).replace("R$", "").strip()
+
+        valor = str(valor).replace("R$", "").strip()
+        
+        if "." in valor and "," in valor:
+            valor = valor.replace(".", "")
+            valor = valor.replace(",", ".")
+            
+        elif "," in valor:
+            valor = valor.replace(",", ".")
+
+        valor = str(valor).replace(",", ".")
         valor_float = float(valor)
 
         return f"{valor_float:.2f}"
@@ -54,6 +64,7 @@ def formatar_desconto(desconto):
         return 0.0
     try:
         desconto = str(desconto).strip()
+        desconto = desconto.replace(",", ".")
         desconto = str(desconto).replace("%", "")
         desconto_float = float(desconto)
         return desconto_float
@@ -79,8 +90,8 @@ def formatar_textos(texto):
         return ""
 
 
-pecas_csv = pandas.read_csv("../pecas.csv", sep=";")
-vendas_csv = pandas.read_csv("../vendas.csv", sep=";")
+pecas_csv = pandas.read_csv("pecas.csv", sep=";")
+vendas_csv = pandas.read_csv("vendas.csv", sep=";")
 
 # sku;nome_peca;categoria;custo_unitario;fornecedor;estoque_atual
 
@@ -103,6 +114,8 @@ vendas_csv["preco_unitario"] = vendas_csv["preco_unitario"].apply(formatar_valor
 vendas_csv["desconto"] = vendas_csv["desconto"].apply(formatar_desconto)
 vendas_csv["status"] = vendas_csv["status"].apply(formatar_textos)
 vendas_csv["vendedor"] = vendas_csv["vendedor"].apply(formatar_textos)
+
+qtd_duplicatas = vendas_csv.duplicated(subset=['id_venda', 'sku']).sum()
 
 vendas_csv = vendas_csv.drop_duplicates(subset=['id_venda', 'sku'])
 

@@ -42,3 +42,16 @@ Erros de formatação encontrados e o que foi feito para corrigir:
 
 ## 7 - Criei um controller para o dashboard pensando em retornar os dados principais pedidos no Case Técnico.
 
+## 8 - Criação da camada View 
+
+*	-**Utilização de IA para codificação e estilização da página da maneira que eu gostaria de apresentar o site**
+
+	-**Criação de Filtros de busca nas páginas**
+
+## 9 - Percepção de erros no tratamento de dados
+
+	- Percebi que ao tratar os dados da forma que fiz, acabei fazendo com que valores acima de 1000 que estivessem com um "." após as casas de milhar geraram campos de vendas com valores 0.
+	- Também percebi que uma falha de não remover "," em alguns valores transformou os descontos em itens nulos com valores 0.
+	- Gerei um novo script para formatar esses dados de forma correta e inserir no Supabase de forma automática, como pede o Case.
+
+
