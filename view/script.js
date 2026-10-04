@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "";
 const currencyBRL = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
