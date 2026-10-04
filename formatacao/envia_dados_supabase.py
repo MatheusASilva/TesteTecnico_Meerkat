@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import insert
 from dotenv import load_dotenv
 import os
 from pathlib import Path
-from formatacao.formatar import pecas_csv, vendas_csv
+from formatacao.formatar import carregar_dados, salvar_arquivos_formatados
 
 caminho_env = Path(__file__).resolve().parent.parent / 'config' / '.env'
 
@@ -16,6 +16,9 @@ if url_para_sqlalchemy.startswith("postgresql://") and "+psycopg2" not in url_pa
     url_para_sqlalchemy = url_para_sqlalchemy.replace("postgresql://", "postgresql+psycopg2://")
 
 engine = create_engine(url_para_sqlalchemy)
+
+pecas_csv, vendas_csv, qtd_duplicatas = carregar_dados()
+salvar_arquivos_formatados(pecas_csv, vendas_csv)
 
 def upsert_pecas_method(table, conn, keys, data_iter): ## Gerado por IA para garantir que os dados sejam inseridos ou atualizados corretamente
     insert_stmt = insert(table.table).values(list(data_iter))

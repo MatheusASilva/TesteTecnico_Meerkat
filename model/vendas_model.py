@@ -51,14 +51,18 @@ class VendaDAO:
             raise e
 
     @staticmethod
-    def busca_por_id(id_venda: str) -> Venda | None:
+    def busca_por_id(id_venda: str, sku: str | None = None) -> Venda | None:
         try:
             with connection.cursor() as cursor:
                 select_query = """
                     SELECT id_venda, data_venda, loja, cliente, sku, quantidade, preco_unitario, desconto, status, vendedor 
                     FROM vendas WHERE id_venda = %s
                 """
-                cursor.execute(select_query, (id_venda,))
+                params = [id_venda]
+                if sku is not None:
+                    select_query += " AND sku = %s"
+                    params.append(sku)
+                cursor.execute(select_query, tuple(params))
                 result = cursor.fetchone()
 
             if result:
@@ -70,16 +74,34 @@ class VendaDAO:
             raise e
 
     @staticmethod
-    def atualiza(venda: Venda):
+    def atualiza(venda: Venda, sku_antigo: str | None = None):
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT status FROM vendas WHERE id_venda = %s", (venda.id_venda,))
-                resultado = cursor.fetchone()
-                
-                if not resultado:
+                sku_filtro = sku_antigo
+                select_query = "SELECT status, sku, quantidade FROM vendas WHERE id_venda = %s"
+                params = [venda.id_venda]
+                if sku_antigo is not None:
+                    select_query += " AND sku = %s"
+                    params.append(sku_antigo)
+                cursor.execute(select_query, tuple(params))
+                resultados = cursor.fetchall()
+                if len(resultados) > 1:
+                    raise ValueError(f"Venda {venda.id_venda} possui mais de uma peça; informe o SKU.")
+                if not resultados:
                     raise ValueError(f"Venda {venda.id_venda} não encontrada.")
-                
-                status_antigo = resultado[0]
+                resultado = resultados[0]
+                status_antigo, sku_venda_antigo, quantidade_antiga = resultado
+
+                if status_antigo == "CONCLUIDA":
+                    cursor.execute(
+                        "UPDATE pecas SET estoque_atual = estoque_atual + %s WHERE sku = %s",
+                        (quantidade_antiga, sku_venda_antigo),
+                    )
+                elif status_antigo == "DEVOLVIDA":
+                    cursor.execute(
+                        "UPDATE pecas SET estoque_atual = estoque_atual - %s WHERE sku = %s",
+                        (quantidade_antiga, sku_venda_antigo),
+                    )
 
                 update_query = """
                     UPDATE vendas
@@ -87,21 +109,27 @@ class VendaDAO:
                         preco_unitario = %s, desconto = %s, status = %s, vendedor = %s
                     WHERE id_venda = %s
                 """
-                cursor.execute(update_query, (
+                update_params = (
                     venda.data_venda, venda.loja, venda.cliente,
                     venda.sku, venda.quantidade, venda.preco_unitario,
                     venda.desconto, venda.status, venda.vendedor,
                     venda.id_venda
-                ))
+                )
+                update_query += " AND sku = %s" if sku_filtro is not None else ""
+                if sku_filtro is not None:
+                    update_params += (sku_filtro,)
+                cursor.execute(update_query, update_params)
 
-                if status_antigo != venda.status:
-                    if venda.status == "CONCLUIDA":
-                        cursor.execute("UPDATE pecas SET estoque_atual = estoque_atual - %s WHERE sku = %s", 
-                                       (venda.quantidade, venda.sku))
-                                       
-                    elif status_antigo == "CONCLUIDA" and venda.status in ["DEVOLVIDA", "CANCELADA"]:
-                        cursor.execute("UPDATE pecas SET estoque_atual = estoque_atual + %s WHERE sku = %s", 
-                                       (venda.quantidade, venda.sku))
+                if venda.status == "CONCLUIDA":
+                    cursor.execute(
+                        "UPDATE pecas SET estoque_atual = estoque_atual - %s WHERE sku = %s",
+                        (venda.quantidade, venda.sku),
+                    )
+                elif venda.status == "DEVOLVIDA":
+                    cursor.execute(
+                        "UPDATE pecas SET estoque_atual = estoque_atual + %s WHERE sku = %s",
+                        (venda.quantidade, venda.sku),
+                    )
 
             connection.commit()
             
@@ -129,26 +157,38 @@ class VendaDAO:
             raise e
 
     @staticmethod
-    def cancela(id_venda: str) -> bool:
+    def cancela(id_venda: str, sku: str | None = None) -> bool:
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT status, sku, quantidade FROM vendas WHERE id_venda = %s", (id_venda,))
-                resultado = cursor.fetchone()
+                sku_filtro = sku
+                select_query = "SELECT status, sku, quantidade FROM vendas WHERE id_venda = %s"
+                params = [id_venda]
+                if sku is not None:
+                    select_query += " AND sku = %s"
+                    params.append(sku)
+                cursor.execute(select_query, tuple(params))
+                resultados = cursor.fetchall()
                 
-                if not resultado:
+                if not resultados:
                     raise ValueError(f"Venda {id_venda} não encontrada.")
+                if len(resultados) > 1:
+                    raise ValueError(f"Venda {id_venda} possui mais de uma peça; informe o SKU.")
                 
-                status_atual, sku, quantidade = resultado
+                status_atual, sku_venda, quantidade = resultados[0]
 
                 if status_atual == "CANCELADA":
                     return False
                 
                 update_query = "UPDATE vendas SET status = 'CANCELADA' WHERE id_venda = %s"
-                cursor.execute(update_query, (id_venda,))
+                update_params = [id_venda]
+                if sku_filtro is not None:
+                    update_query += " AND sku = %s"
+                    update_params.append(sku_filtro)
+                cursor.execute(update_query, tuple(update_params))
 
                 if status_atual == "CONCLUIDA":
                     cursor.execute("UPDATE pecas SET estoque_atual = estoque_atual + %s WHERE sku = %s", 
-                                   (quantidade, sku))
+                                   (quantidade, sku_venda))
 
             connection.commit()
             return True

@@ -1,123 +1,104 @@
+from datetime import datetime
+from pathlib import Path
 import unicodedata
 
 import pandas
-from datetime import datetime
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+PECAS_PATH = BASE_DIR / "pecas.csv"
+VENDAS_PATH = BASE_DIR / "vendas.csv"
+OUTPUT_DIR = Path(__file__).resolve().parent
+
 
 def formatar_data(data):
-    if pandas.isna(data): return None
+    if pandas.isna(data):
+        return None
     data = str(data).strip()
     try:
         if "/" in data:
-            data_corrigida = datetime.strptime(data, "%d/%m/%Y")
-        elif "-" in data:
-            if len(data.split("-")[0]) == 4: #tem data no formato ano-mes-dia e data no formato dia-mes-ano
-                return datetime.strptime(data, "%Y-%m-%d").strftime("%Y-%m-%d")
-            else:
-                return datetime.strptime(data, "%d-%m-%Y").strftime("%Y-%m-%d")
-            
-        return data_corrigida.strftime("%Y-%m-%d")
+            return datetime.strptime(data, "%d/%m/%Y").strftime("%Y-%m-%d")
+        if "-" in data:
+            formato = "%Y-%m-%d" if len(data.split("-")[0]) == 4 else "%d-%m-%Y"
+            return datetime.strptime(data, formato).strftime("%Y-%m-%d")
     except ValueError:
         return "Data invalida"
+    return "Data invalida"
+
 
 def formatar_sku(sku):
-    if pandas.isna(sku): 
-        return None
-    
-    return sku.strip().upper()
+    return None if pandas.isna(sku) else str(sku).strip().upper()
+
 
 def formatar_valor(valor):
     if pandas.isna(valor):
         return 0.0
-    
     try:
         valor = str(valor).replace("R$", "").strip()
-
-        valor = str(valor).replace("R$", "").strip()
-        
         if "." in valor and "," in valor:
-            valor = valor.replace(".", "")
-            valor = valor.replace(",", ".")
-            
+            valor = valor.replace(".", "").replace(",", ".")
         elif "," in valor:
             valor = valor.replace(",", ".")
-
-        valor = str(valor).replace(",", ".")
-        valor_float = float(valor)
-
-        return f"{valor_float:.2f}"
+        return f"{float(valor):.2f}"
     except ValueError:
         return 0.0
+
 
 def formatar_quantidade(quantidade):
     if pandas.isna(quantidade):
         return 0
     try:
-        quantidade = str(quantidade).strip()
-        quantidade = str(quantidade).replace(",", ".")
-        quantidade_int = int(float(quantidade))
-        return quantidade_int
+        return int(float(str(quantidade).strip().replace(",", ".")))
     except ValueError:
         return 0
+
 
 def formatar_desconto(desconto):
     if pandas.isna(desconto):
         return 0.0
     try:
-        desconto = str(desconto).strip()
-        desconto = desconto.replace(",", ".")
-        desconto = str(desconto).replace("%", "")
-        desconto_float = float(desconto)
-        return desconto_float
+        return float(str(desconto).strip().replace("%", "").replace(",", "."))
     except ValueError:
         return 0.0
+
 
 def formatar_textos(texto):
     if pandas.isna(texto):
         return ""
-    try:
-        texto = str(texto).strip().upper()
-        texto = "".join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
-
-        padronizacao = {
-            "FREIO": "FREIOS",
-            "FRENAGEM": "FREIOS",
-            "FILTRO": "FILTROS"
-        }
-
-        texto = padronizacao.get(texto, texto)
-        return texto
-    except ValueError:
-        return ""
+    texto = "".join(c for c in unicodedata.normalize("NFD", str(texto).strip().upper()) if unicodedata.category(c) != "Mn")
+    return {"FREIO": "FREIOS", "FRENAGEM": "FREIOS", "FILTRO": "FILTROS"}.get(texto, texto)
 
 
-pecas_csv = pandas.read_csv("pecas.csv", sep=";")
-vendas_csv = pandas.read_csv("vendas.csv", sep=";")
+def carregar_dados():
+    pecas_csv = pandas.read_csv(PECAS_PATH, sep=";")
+    vendas_csv = pandas.read_csv(VENDAS_PATH, sep=";")
 
-# sku;nome_peca;categoria;custo_unitario;fornecedor;estoque_atual
+    pecas_csv["sku"] = pecas_csv["sku"].apply(formatar_sku)
+    pecas_csv["nome_peca"] = pecas_csv["nome_peca"].apply(formatar_textos)
+    pecas_csv["categoria"] = pecas_csv["categoria"].apply(formatar_textos)
+    pecas_csv["custo_unitario"] = pecas_csv["custo_unitario"].apply(formatar_valor)
+    pecas_csv["fornecedor"] = pecas_csv["fornecedor"].apply(formatar_textos)
+    pecas_csv["estoque_atual"] = pecas_csv["estoque_atual"].apply(formatar_quantidade)
 
-pecas_csv["sku"] = pecas_csv["sku"].apply(formatar_sku)
-pecas_csv["nome_peca"] = pecas_csv["nome_peca"].apply(formatar_textos)
-pecas_csv["categoria"] = pecas_csv["categoria"].apply(formatar_textos)
-pecas_csv["custo_unitario"] = pecas_csv["custo_unitario"].apply(formatar_valor)
-pecas_csv["fornecedor"] = pecas_csv["fornecedor"].apply(formatar_textos)
-pecas_csv["estoque_atual"] = pecas_csv["estoque_atual"].apply(formatar_quantidade)
+    for coluna in ["id_venda", "sku"]:
+        vendas_csv[coluna] = vendas_csv[coluna].apply(formatar_sku)
+    for coluna in ["loja", "cliente", "status", "vendedor"]:
+        vendas_csv[coluna] = vendas_csv[coluna].apply(formatar_textos)
+    vendas_csv["data_venda"] = vendas_csv["data_venda"].apply(formatar_data)
+    vendas_csv["quantidade"] = vendas_csv["quantidade"].apply(formatar_quantidade)
+    vendas_csv["preco_unitario"] = vendas_csv["preco_unitario"].apply(formatar_valor)
+    vendas_csv["desconto"] = vendas_csv["desconto"].apply(formatar_desconto)
 
-#id_venda;data_venda;loja;cliente;sku;quantidade;preco_unitario;desconto;status;vendedor
+    duplicatas = int(vendas_csv.duplicated(subset=["id_venda", "sku"]).sum())
+    vendas_csv = vendas_csv.drop_duplicates(subset=["id_venda", "sku"])
+    return pecas_csv, vendas_csv, duplicatas
 
-vendas_csv["id_venda"] = vendas_csv["id_venda"].apply(formatar_sku)
-vendas_csv["data_venda"] = vendas_csv["data_venda"].apply(formatar_data)
-vendas_csv["loja"] = vendas_csv["loja"].apply(formatar_textos)
-vendas_csv["cliente"] = vendas_csv["cliente"].apply(formatar_textos)
-vendas_csv["sku"] = vendas_csv["sku"].apply(formatar_sku)
-vendas_csv["quantidade"] = vendas_csv["quantidade"].apply(formatar_quantidade)
-vendas_csv["preco_unitario"] = vendas_csv["preco_unitario"].apply(formatar_valor)
-vendas_csv["desconto"] = vendas_csv["desconto"].apply(formatar_desconto)
-vendas_csv["status"] = vendas_csv["status"].apply(formatar_textos)
-vendas_csv["vendedor"] = vendas_csv["vendedor"].apply(formatar_textos)
 
-qtd_duplicatas = vendas_csv.duplicated(subset=['id_venda', 'sku']).sum()
+def salvar_arquivos_formatados(pecas_csv, vendas_csv):
+    pecas_csv.to_csv(OUTPUT_DIR / "pecas_formatadas.csv", index=False, sep=";")
+    vendas_csv.to_csv(OUTPUT_DIR / "vendas_formatadas.csv", index=False, sep=";")
 
-vendas_csv = vendas_csv.drop_duplicates(subset=['id_venda', 'sku'])
 
-pecas_csv.to_csv("pecas_formatadas.csv", index=False, sep=";")
-vendas_csv.to_csv("vendas_formatadas.csv", index=False, sep=";")
+if __name__ == "__main__":
+    pecas, vendas, duplicatas = carregar_dados()
+    salvar_arquivos_formatados(pecas, vendas)
+    print(f"Dados formatados. Duplicatas removidas: {duplicatas}")

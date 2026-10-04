@@ -11,6 +11,7 @@ const state = {
   sales: [],
   editingPartSku: null,
   editingSaleId: null,
+  editingSaleSku: null,
 };
 const elements = {
   revenue: document.getElementById("revenue-content"),
@@ -26,6 +27,8 @@ const elements = {
   salesCount: document.getElementById("sales-count"),
   insightsSummary: document.getElementById("insights-summary"),
   marginContent: document.getElementById("margin-content"),
+  topPartsContent: document.getElementById("top-parts-content"),
+  qualityContent: document.getElementById("quality-content"),
   filterStart: document.getElementById("filter-start"),
   filterEnd: document.getElementById("filter-end"),
   filterStore: document.getElementById("filter-store"),
@@ -34,6 +37,8 @@ const elements = {
   partFormTitle: document.getElementById("part-form-title"),
   saleForm: document.getElementById("sale-form"),
   saleEditor: document.getElementById("sale-editor"),
+  saleEditorTitle: document.getElementById("sale-editor-title"),
+  saleId: document.getElementById("sale-id"),
 };
 
 function escapeHTML(value) {
@@ -103,7 +108,11 @@ function renderDashboard(revenue, categories, inventory) {
   elements.count.innerHTML = `<div class="metric-value">${integerBR.format(inventory.quantidade_total)}</div>`;
   renderCategories(categories.categorias);
   renderInventory(inventory.pecas);
-  elements.lastUpdate.textContent = `Atualizado em ${dateBR.format(new Date())}`;
+  console.log(`Atualizado em ${dateBR.format(new Date())}`);
+}
+
+function renderQuality(quality) {
+  elements.qualityContent.innerHTML = `<dl class="quality-list"><div><dt>Linhas lidas</dt><dd>${integerBR.format(quality.linhas_vendas_lidas)}</dd></div><div><dt>Linhas válidas</dt><dd>${integerBR.format(quality.linhas_vendas_validas)}</dd></div><div><dt>Duplicidades removidas</dt><dd>${integerBR.format(quality.linhas_duplicadas_removidas)}</dd></div></dl>`;
 }
 
 function renderParts() {
@@ -127,7 +136,7 @@ function renderSales() {
     ? state.sales
         .map(
           (sale) =>
-            `<tr><td class="sku">${escapeHTML(sale.id_venda)}</td><td>${escapeHTML(sale.data_venda)}</td><td>${escapeHTML(sale.loja)}</td><td>${escapeHTML(sale.sku)}</td><td>${integerBR.format(sale.quantidade)}</td><td>${currencyBRL.format(saleNetValue(sale))}</td><td><span class="badge ${sale.status === "CONCLUIDA" ? "text-bg-success" : "text-bg-secondary"}">${escapeHTML(sale.status)}</span></td><td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" data-edit-sale="${escapeHTML(sale.id_venda)}" title="Editar venda"><i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Editar</span></button><button class="btn btn-sm btn-outline-danger" data-cancel-sale="${escapeHTML(sale.id_venda)}" title="Cancelar venda"><i class="bi bi-x-circle" aria-hidden="true"></i><span class="visually-hidden">Cancelar</span></button></td></tr>`,
+            `<tr><td class="sku">${escapeHTML(sale.id_venda)}</td><td>${escapeHTML(sale.data_venda)}</td><td>${escapeHTML(sale.loja)}</td><td>${escapeHTML(sale.sku)}</td><td>${integerBR.format(sale.quantidade)}</td><td>${currencyBRL.format(saleNetValue(sale))}</td><td><span class="badge ${sale.status === "CONCLUIDA" ? "text-bg-success" : "text-bg-secondary"}">${escapeHTML(sale.status)}</span></td><td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" data-edit-sale="${escapeHTML(`${sale.id_venda}|${sale.sku}`)}" title="Editar venda"><i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Editar</span></button><button class="btn btn-sm btn-outline-danger" data-cancel-sale="${escapeHTML(`${sale.id_venda}|${sale.sku}`)}" title="Cancelar venda"><i class="bi bi-x-circle" aria-hidden="true"></i><span class="visually-hidden">Cancelar</span></button></td></tr>`,
         )
         .join("")
     : '<tr><td colspan="8" class="empty-state py-4 text-center">Nenhuma venda registrada.</td></tr>';
@@ -196,6 +205,23 @@ function renderInsights() {
   elements.marginContent.innerHTML = rows.length
     ? `<table class="table table-hover mb-0"><caption class="visually-hidden">Margem estimada por categoria</caption><thead><tr><th>Categoria</th><th>Faturamento</th><th>Custo</th><th>Margem estimada</th></tr></thead><tbody>${rows.map(([name, values]) => `<tr><td class="fw-semibold">${escapeHTML(name)}</td><td>${currencyBRL.format(values.revenue)}</td><td>${currencyBRL.format(values.cost)}</td><td class="text-success fw-bold">${currencyBRL.format(values.revenue - values.cost)}</td></tr>`).join("")}</tbody></table>`
     : '<p class="empty-state mb-0">Nenhuma venda concluída corresponde aos filtros.</p>';
+  renderTopParts(filteredSales, partBySku);
+}
+
+function renderTopParts(sales, partBySku) {
+  const ranking = {};
+  sales.forEach((sale) => {
+    const part = partBySku.get(sale.sku);
+    if (!part) return;
+    ranking[sale.sku] ||= { nome: part.nome_peca, revenue: 0 };
+    ranking[sale.sku].revenue += saleNetValue(sale);
+  });
+  const topParts = Object.entries(ranking)
+    .sort(([, first], [, second]) => second.revenue - first.revenue)
+    .slice(0, 5);
+  elements.topPartsContent.innerHTML = topParts.length
+    ? `<table class="table table-sm table-hover mb-0"><caption class="visually-hidden">Top 5 peças por faturamento</caption><thead><tr><th>#</th><th>Peça</th><th class="text-end">Faturamento</th></tr></thead><tbody>${topParts.map(([sku, part], index) => `<tr><td class="fw-bold">${index + 1}</td><td><span class="sku">${escapeHTML(sku)}</span><br><small>${escapeHTML(part.nome)}</small></td><td class="text-end fw-bold">${currencyBRL.format(part.revenue)}</td></tr>`).join("")}</tbody></table>`
+    : '<p class="empty-state mb-0">Nenhuma venda concluída corresponde aos filtros.</p>';
 }
 
 function resetPartForm() {
@@ -218,10 +244,17 @@ function startPartEdit(sku) {
   document.getElementById("part-stock").value = part.estoque_atual;
   document.getElementById("parts-view").scrollIntoView({ behavior: "smooth" });
 }
-function startSaleEdit(id) {
-  const sale = state.sales.find((item) => item.id_venda === id);
+function startSaleEdit(key) {
+  const [id, sku] = key.split("|");
+  const sale = state.sales.find(
+    (item) => item.id_venda === id && item.sku === sku,
+  );
   if (!sale) return;
   state.editingSaleId = id;
+  state.editingSaleSku = sku;
+  elements.saleEditorTitle.firstChild.textContent = "Editar venda ";
+  elements.saleId.value = sale.id_venda;
+  elements.saleId.disabled = true;
   elements.saleEditor.classList.remove("d-none");
   document.getElementById("sale-editor-id").textContent = id;
   document.getElementById("sale-date").value = sale.data_venda;
@@ -239,15 +272,17 @@ function startSaleEdit(id) {
 async function loadData() {
   setLoading(true);
   elements.error.classList.add("d-none");
-  elements.status.textContent = "Consultando os dados mais recentes...";
+  console.log("Consultando os dados mais recentes...");
   try {
-    const [revenue, categories, inventory, parts, sales] = await Promise.all([
-      requestJSON("/dashboard/faturamento-total"),
-      requestJSON("/dashboard/faturamento-por-categoria"),
-      requestJSON("/dashboard/estoque-parado"),
-      requestJSON("/pecas/"),
-      requestJSON("/vendas/"),
-    ]);
+    const [revenue, categories, inventory, parts, sales, quality] =
+      await Promise.all([
+        requestJSON("/dashboard/faturamento-total"),
+        requestJSON("/dashboard/faturamento-por-categoria"),
+        requestJSON("/dashboard/estoque-parado"),
+        requestJSON("/pecas/"),
+        requestJSON("/vendas/"),
+        requestJSON("/dashboard/qualidade-dados"),
+      ]);
     state.parts = parts;
     state.sales = sales;
     renderDashboard(revenue, categories, inventory);
@@ -255,12 +290,13 @@ async function loadData() {
     renderSales();
     populateFilters();
     renderInsights();
-    elements.status.textContent = "Dados carregados com sucesso.";
+    renderQuality(quality);
+    console.log("Dados carregados com sucesso.");
   } catch (error) {
     console.error("Falha ao carregar dados:", error);
-    elements.error.textContent = `Não foi possível carregar os dados. ${error.message}`;
+    console.error(`Não foi possível carregar os dados. ${error.message}`);
     elements.error.classList.remove("d-none");
-    elements.status.textContent = "A atualização não foi concluída.";
+    console.error("A atualização não foi concluída.");
   } finally {
     setLoading(false);
   }
@@ -312,9 +348,10 @@ async function deletePart(sku) {
 }
 async function saveSale(event) {
   event.preventDefault();
-  if (!state.editingSaleId) return;
+  const saleId = elements.saleId.value.trim().toUpperCase();
+  if (!saleId) return;
   const payload = {
-    id_venda: state.editingSaleId,
+    id_venda: saleId,
     data_venda: document.getElementById("sale-date").value,
     loja: document.getElementById("sale-store").value.trim().toUpperCase(),
     cliente: document.getElementById("sale-client").value.trim().toUpperCase(),
@@ -326,8 +363,11 @@ async function saveSale(event) {
     vendedor: document.getElementById("sale-seller").value.trim().toUpperCase(),
   };
   try {
-    await requestJSON(`/vendas/${encodeURIComponent(state.editingSaleId)}`, {
-      method: "PUT",
+    const path = state.editingSaleId
+      ? `/vendas/${encodeURIComponent(state.editingSaleId)}/${encodeURIComponent(state.editingSaleSku)}`
+      : "/vendas/";
+    await requestJSON(path, {
+      method: state.editingSaleId ? "PUT" : "POST",
       body: JSON.stringify(payload),
     });
     cancelSaleEdit();
@@ -337,11 +377,15 @@ async function saveSale(event) {
   }
 }
 async function cancelSale(id) {
-  if (!window.confirm(`Cancelar a venda ${id}?`)) return;
+  const [saleId, saleSku] = id.split("|");
+  if (!window.confirm(`Cancelar a venda ${saleId} - ${saleSku}?`)) return;
   try {
-    await requestJSON(`/vendas/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    });
+    await requestJSON(
+      `/vendas/${encodeURIComponent(saleId)}/${encodeURIComponent(saleSku)}`,
+      {
+        method: "DELETE",
+      },
+    );
     await loadData();
   } catch (error) {
     showActionError(error);
@@ -349,8 +393,21 @@ async function cancelSale(id) {
 }
 function cancelSaleEdit() {
   state.editingSaleId = null;
+  state.editingSaleSku = null;
+  elements.saleId.disabled = false;
   elements.saleEditor.classList.add("d-none");
   elements.saleForm.reset();
+}
+
+function startNewSale() {
+  state.editingSaleId = null;
+  state.editingSaleSku = null;
+  elements.saleForm.reset();
+  elements.saleEditorTitle.firstChild.textContent = "Cadastrar venda";
+  elements.saleEditorTitle.lastElementChild.textContent = "";
+  elements.saleId.disabled = false;
+  elements.saleEditor.classList.remove("d-none");
+  elements.saleEditor.scrollIntoView({ behavior: "smooth" });
 }
 function showActionError(error) {
   elements.error.textContent = `Não foi possível concluir a operação. ${error.message}`;
@@ -384,6 +441,7 @@ document.getElementById("clear-filters").addEventListener("click", () => {
 });
 document.getElementById("new-part").addEventListener("click", resetPartForm);
 document.getElementById("cancel-part").addEventListener("click", resetPartForm);
+document.getElementById("new-sale").addEventListener("click", startNewSale);
 elements.partForm.addEventListener("submit", savePart);
 elements.saleForm.addEventListener("submit", saveSale);
 document
