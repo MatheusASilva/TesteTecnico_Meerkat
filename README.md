@@ -2,7 +2,6 @@
 
 Sistema gerencial desenvolvido para o case técnico da Meerkat Coding.
 
-
 ## Respostas do case
 
 1. **Faturamento líquido total:** R$ 886.092,01.
@@ -65,6 +64,8 @@ python -m formatacao.envia_dados_supabase
 ```
 
 O carregamento usa upsert e a chave de conflito `sku` para peças e `id_venda + sku` para vendas. Assim, executar o comando novamente não duplica os registros. O script também informa quantas duplicidades foram removidas.
+
+Os indicadores de qualidade são persistidos na tabela `qualidade_dados`. Depois da carga, o Dashboard consulta o banco e não depende dos arquivos CSV para funcionar.
 
 4. Inicie a aplicação:
 

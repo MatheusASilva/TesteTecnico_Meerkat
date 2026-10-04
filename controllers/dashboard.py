@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
-from formatacao.formatar import carregar_dados
 from model.pecas_model import PecaDAO
+from model.qualidade_model import QualidadeDAO
 from model.vendas_model import VendaDAO
 
 router = APIRouter(
@@ -87,12 +87,6 @@ async def obter_estoque_parado():
 @router.get("/qualidade-dados", status_code=status.HTTP_200_OK)
 async def obter_qualidade_dados():
     try:
-        pecas, vendas, duplicatas = carregar_dados()
-        return {
-            "linhas_pecas_lidas": len(pecas),
-            "linhas_vendas_lidas": len(vendas) + duplicatas,
-            "linhas_vendas_validas": len(vendas),
-            "linhas_duplicadas_removidas": duplicatas,
-        }
+        return QualidadeDAO.obter().to_dict()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao avaliar qualidade dos dados: {e}")

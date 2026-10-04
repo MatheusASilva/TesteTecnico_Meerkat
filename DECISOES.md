@@ -144,6 +144,7 @@
 - Decidi colocar a qualidade dos dados em um bloco menor dentro da área de insights. Assim o Sr. Andrade consegue ver quantas linhas foram lidas, quantas ficaram válidas e quantas duplicidades foram removidas, mas essa informação não tira o foco das três respostas principais.
 - Também adicionei um ranking com as cinco peças que mais faturaram. O ranking considera apenas vendas concluídas e acompanha os filtros de período, loja e categoria, para permitir uma leitura mais útil do resultado.
 - Reutilizei o formulário de edição para cadastrar novas vendas. Quando não existe uma venda em edição, o formulário envia `POST`; quando existe, envia `PUT` usando a chave composta. Assim a tela continua simples e não cria uma etapa separada para uma operação parecida.
+- Percebi que a rota de qualidade ainda lia os CSVs toda vez que o Dashboard era aberto. Para deixar a View independente dos arquivos de entrada, criei a tabela `qualidade_dados`, atualizada pela carga e consultada apenas pelo `QualidadeDAO` na camada model.
 
 ### 12 - Atualizei o arquivo "DECISOES.md"
 

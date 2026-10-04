@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.dialects.postgresql import insert
 from dotenv import load_dotenv
 import os
@@ -39,3 +39,39 @@ def upsert_vendas_method(table, conn, keys, data_iter):
 pecas_csv.to_sql("pecas", engine, if_exists="append", index=False, method=upsert_pecas_method)
 
 vendas_csv.to_sql("vendas", engine, if_exists="append", index=False, method=upsert_vendas_method)
+
+with engine.begin() as conn:
+    conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS qualidade_dados (
+                id INTEGER PRIMARY KEY,
+                linhas_pecas_lidas INTEGER NOT NULL,
+                linhas_vendas_lidas INTEGER NOT NULL,
+                linhas_vendas_validas INTEGER NOT NULL,
+                linhas_duplicadas_removidas INTEGER NOT NULL
+            )
+            """
+        )
+    )
+    conn.execute(
+        text(
+            """
+            INSERT INTO qualidade_dados (
+                id, linhas_pecas_lidas, linhas_vendas_lidas,
+                linhas_vendas_validas, linhas_duplicadas_removidas
+            ) VALUES (1, :pecas, :vendas_lidas, :vendas_validas, :duplicatas)
+            ON CONFLICT (id) DO UPDATE SET
+                linhas_pecas_lidas = EXCLUDED.linhas_pecas_lidas,
+                linhas_vendas_lidas = EXCLUDED.linhas_vendas_lidas,
+                linhas_vendas_validas = EXCLUDED.linhas_vendas_validas,
+                linhas_duplicadas_removidas = EXCLUDED.linhas_duplicadas_removidas
+            """
+        ),
+        {
+            "pecas": len(pecas_csv),
+            "vendas_lidas": len(vendas_csv) + qtd_duplicatas,
+            "vendas_validas": len(vendas_csv),
+            "duplicatas": qtd_duplicatas,
+        },
+    )
