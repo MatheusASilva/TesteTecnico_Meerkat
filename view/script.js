@@ -1,4 +1,4 @@
-const API_BASE_URL = "";
+const API_BASE_URL = window.location.origin;
 const currencyBRL = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
